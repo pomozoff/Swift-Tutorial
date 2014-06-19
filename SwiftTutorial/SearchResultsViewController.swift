@@ -21,8 +21,8 @@ class SearchResultsViewController: UIViewController, UITableViewDataSource, UITa
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view, typically from a nib.
-        self.api.searchItunesFor("Bob Dylan")
-        self.nf.maximumFractionDigits = 2;
+        api.searchItunesFor("Bob Dylan")
+        nf.maximumFractionDigits = 2;
     }
     
     override func didReceiveMemoryWarning() {
@@ -37,13 +37,13 @@ class SearchResultsViewController: UIViewController, UITableViewDataSource, UITa
     func tableView(tableView: UITableView!, cellForRowAtIndexPath indexPath: NSIndexPath!) -> UITableViewCell! {
         let cell = tableView.dequeueReusableCellWithIdentifier("SearchResultCell") as UITableViewCell
         
-        let album = self.albums[indexPath.row]
+        let album = albums[indexPath.row]
         
         // Grab the artworkUrl60 key to get an image URL for the app's thumbnail
         let urlString = album.thumbnailImageURL
         
         // Check our image cache for the existing key. This is just a dictionary of UIImages
-        var image: UIImage? = self.imageCache.valueForKey(urlString) as? UIImage
+        var image: UIImage? = imageCache.valueForKey(urlString) as? UIImage
         
         if image? {
             // If image has found in cache set it immediately
@@ -87,7 +87,7 @@ class SearchResultsViewController: UIViewController, UITableViewDataSource, UITa
     override func prepareForSegue(segue: UIStoryboardSegue, sender: AnyObject) {
         var detailsViewController: DetailsViewController = segue.destinationViewController as DetailsViewController
         var albumIndex = appsTableView.indexPathForSelectedRow().row
-        var selectedAlbum = self.albums[albumIndex]
+        var selectedAlbum = albums[albumIndex]
         detailsViewController.album = selectedAlbum
     }
     
@@ -120,6 +120,7 @@ class SearchResultsViewController: UIViewController, UITableViewDataSource, UITa
                 let thumbnailURL: String? = result["artworkUrl60"] as? String
                 let imageURL: String? = result["artworkUrl100"] as? String
                 let artistURL: String? = result["artistViewUrl"] as? String
+                let collectionId = result["collectionId"] as? Int
                 
                 var itemURL: String? = result["collectionViewUrl"] as? String
                 if !itemURL? {
@@ -131,7 +132,8 @@ class SearchResultsViewController: UIViewController, UITableViewDataSource, UITa
                     thumbnailImageURL: thumbnailURL!,
                     largeImageURL: imageURL!,
                     itemURL: itemURL!,
-                    artistURL: artistURL!)
+                    artistURL: artistURL!,
+                    collectionId: collectionId!)
                 albums.append(newAlbum)
             }
             
