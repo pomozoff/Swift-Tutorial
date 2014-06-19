@@ -35,7 +35,7 @@ class SearchResultsViewController: UIViewController, UITableViewDataSource, UITa
     }
     
     func tableView(tableView: UITableView!, cellForRowAtIndexPath indexPath: NSIndexPath!) -> UITableViewCell! {
-        let cell: UITableViewCell = tableView.dequeueReusableCellWithIdentifier("SearchResultCell") as UITableViewCell
+        let cell = tableView.dequeueReusableCellWithIdentifier("SearchResultCell") as UITableViewCell
         
         let album = self.albums[indexPath.row]
         
@@ -53,7 +53,7 @@ class SearchResultsViewController: UIViewController, UITableViewDataSource, UITa
             cell.image = UIImage(named: "Blank52")
             
             // If the image does not exist, we need to download it
-            let url: NSURL = NSURL(string: urlString)
+            let url = NSURL(string: urlString)
             let session = NSURLSession.sharedSession()
 
             // Download an NSData representation of the image at the URL
@@ -95,10 +95,10 @@ class SearchResultsViewController: UIViewController, UITableViewDataSource, UITa
     func didReceiveAPIResults(results: NSDictionary) {
         // Store the results in our table data array
         if results.count > 0 {
-            let allResults: NSDictionary[] = results["results"] as NSDictionary[]
+            let allResults = results["results"] as NSDictionary[]
             
             // Sometimes iTunes returns a collection, not a track, so we check both for the 'name'
-            for result: NSDictionary in allResults {
+            for result in allResults {
                 
                 var name: String? = result["trackName"] as? String
                 if !name? {
@@ -126,7 +126,12 @@ class SearchResultsViewController: UIViewController, UITableViewDataSource, UITa
                     itemURL = result["trackViewUrl"] as? String
                 }
                 
-                var newAlbum = Album(name: name!, price: price!, thumbnailImageURL: thumbnailURL!, largeImageURL: imageURL!, itemURL: itemURL!, artistURL: artistURL!)
+                var newAlbum = Album(name: name!,
+                    price: price!,
+                    thumbnailImageURL: thumbnailURL!,
+                    largeImageURL: imageURL!,
+                    itemURL: itemURL!,
+                    artistURL: artistURL!)
                 albums.append(newAlbum)
             }
             
