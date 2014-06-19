@@ -17,6 +17,8 @@ class APIController: NSObject {
     var delegate: APIControllerProtocol?
     
     func searchItunesFor(searchTerm: String) {
+        UIApplication.sharedApplication().networkActivityIndicatorVisible = true
+        
         // The iTunes API wants multiple terms separated by + symbols, so replace spaces with + signs
         let itunesSearchTerm = searchTerm.stringByReplacingOccurrencesOfString(" ",
             withString: "+",
@@ -25,18 +27,21 @@ class APIController: NSObject {
         
         // Now escape anything else that isn't URL-friendly
         let escapedSearchTerm = itunesSearchTerm.stringByAddingPercentEscapesUsingEncoding(NSUTF8StringEncoding)
-        let urlPath = "https://itunes.apple.com/search?term=\(escapedSearchTerm)&media=software"
+        let urlPath = "https://itunes.apple.com/search?term=\(escapedSearchTerm)&media=music&entity=album"
         let url: NSURL = NSURL(string: urlPath)
         
         let session = NSURLSession.sharedSession()
         let task = session.dataTaskWithURL(url, completionHandler: { data, response, error -> Void in
             println("Search: Task completed")
+            UIApplication.sharedApplication().networkActivityIndicatorVisible = false
             if error {
                 // If there is an error in the web request, print it to the console
                 println(error.localizedDescription)
             } else {
                 var errorJson: NSError?
-                let jsonResult = NSJSONSerialization.JSONObjectWithData(data, options: NSJSONReadingOptions.MutableContainers, error: &errorJson) as NSDictionary
+                let jsonResult = NSJSONSerialization.JSONObjectWithData(data,
+                    options: NSJSONReadingOptions.MutableContainers,
+                    error: &errorJson) as NSDictionary
                 if errorJson? {
                     // If there is an error parsing JSON, print it to the console
                     println("JSON Error \(errorJson!.localizedDescription)")
@@ -47,6 +52,10 @@ class APIController: NSObject {
             }
         })
         task.resume()
+    }
+    
+    init(delegate: APIControllerProtocol?) {
+        self.delegate = delegate
     }
     
 }

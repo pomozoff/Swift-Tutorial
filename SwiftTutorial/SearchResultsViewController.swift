@@ -12,15 +12,17 @@ class SearchResultsViewController: UIViewController, UITableViewDataSource, UITa
     
     @IBOutlet var appsTableView : UITableView
     
-    let api: APIController = APIController()
+    @lazy var api: APIController = APIController(delegate: self)
+    @lazy var nf: NSNumberFormatter = NSNumberFormatter()
+    
     let imageCache = NSMutableDictionary()
-    var tableData: NSArray = []
+    var albums: Album[] = []
     
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view, typically from a nib.
-        self.api.delegate = self
-        self.api.searchItunesFor("Angry Birds")
+        self.api.searchItunesFor("Bob Dylan")
+        self.nf.maximumFractionDigits = 2;
     }
     
     override func didReceiveMemoryWarning() {
@@ -29,22 +31,16 @@ class SearchResultsViewController: UIViewController, UITableViewDataSource, UITa
     }
     
     func tableView(tableView: UITableView!, numberOfRowsInSection section: Int) -> Int {
-        return tableData.count
+        return albums.count
     }
     
     func tableView(tableView: UITableView!, cellForRowAtIndexPath indexPath: NSIndexPath!) -> UITableViewCell! {
         let cell: UITableViewCell = tableView.dequeueReusableCellWithIdentifier("SearchResultCell") as UITableViewCell
         
-        let rowData: NSDictionary = self.tableData[indexPath.row] as NSDictionary
-        
-        // Get the formatted price string for display in the subtitle
-        let formattedPrice: String = rowData["formattedPrice"] as String
-        
-        // Add a check to make sure this exists
-        let cellText: String = rowData["trackName"] as String
+        let album = self.albums[indexPath.row]
         
         // Grab the artworkUrl60 key to get an image URL for the app's thumbnail
-        let urlString: String = rowData["artworkUrl60"] as String
+        let urlString = album.thumbnailImageURL
         
         // Check our image cache for the existing key. This is just a dictionary of UIImages
         var image: UIImage? = self.imageCache.valueForKey(urlString) as? UIImage
@@ -61,7 +57,9 @@ class SearchResultsViewController: UIViewController, UITableViewDataSource, UITa
             let session = NSURLSession.sharedSession()
 
             // Download an NSData representation of the image at the URL
+            UIApplication.sharedApplication().networkActivityIndicatorVisible = true
             let task = session.dataTaskWithURL(url, completionHandler: { data, response, error -> Void in
+                UIApplication.sharedApplication().networkActivityIndicatorVisible = false
                 if error {
                     // If there is an error in the web request, print it to the console
                     println(error.localizedDescription)
@@ -80,32 +78,63 @@ class SearchResultsViewController: UIViewController, UITableViewDataSource, UITa
             task.resume()
         }
         
-        cell.text = cellText
-        cell.detailTextLabel.text = formattedPrice
+        cell.text = album.title
+        cell.detailTextLabel.text = album.price
         
         return cell
     }
     
-    func tableView(tableView: UITableView!, didSelectRowAtIndexPath indexPath: NSIndexPath!) {
-        // Get the row data for the selected row
-        let rowData: NSDictionary = self.tableData[indexPath.row] as NSDictionary
-        
-        let name: String = rowData["trackName"] as String
-        let formattedPrice: String = rowData["formattedPrice"] as String
-        
-        let alert: UIAlertView = UIAlertView()
-        alert.title = name
-        alert.message = formattedPrice
-        alert.addButtonWithTitle("Ok")
-        alert.show()
+    override func prepareForSegue(segue: UIStoryboardSegue, sender: AnyObject) {
+        var detailsViewController: DetailsViewController = segue.destinationViewController as DetailsViewController
+        var albumIndex = appsTableView.indexPathForSelectedRow().row
+        var selectedAlbum = self.albums[albumIndex]
+        detailsViewController.album = selectedAlbum
     }
     
+    
     func didReceiveAPIResults(results: NSDictionary) {
-        let resultsArr: NSArray = results["results"] as NSArray
-        dispatch_async(dispatch_get_main_queue(), {
-            self.tableData = resultsArr
-            self.appsTableView.reloadData()
-        })
+        // Store the results in our table data array
+        if results.count > 0 {
+            let allResults: NSDictionary[] = results["results"] as NSDictionary[]
+            
+            // Sometimes iTunes returns a collection, not a track, so we check both for the 'name'
+            for result: NSDictionary in allResults {
+                
+                var name: String? = result["trackName"] as? String
+                if !name? {
+                    name = result["collectionName"] as? String
+                }
+                
+                // Sometimes price comes in as formattedPrice, sometimes as collectionPrice.. and sometimes it's a float instead of a string. Hooray!
+                var price: String? = result["formattedPrice"] as? String
+                if !price? {
+                    price = result["collectionPrice"] as? String
+                    if !price? {
+                        let priceFloat: Float? = result["collectionPrice"] as? Float
+                        if priceFloat? {
+                            price = "$" + nf.stringFromNumber(priceFloat)
+                        }
+                    }
+                }
+                
+                let thumbnailURL: String? = result["artworkUrl60"] as? String
+                let imageURL: String? = result["artworkUrl100"] as? String
+                let artistURL: String? = result["artistViewUrl"] as? String
+                
+                var itemURL: String? = result["collectionViewUrl"] as? String
+                if !itemURL? {
+                    itemURL = result["trackViewUrl"] as? String
+                }
+                
+                var newAlbum = Album(name: name!, price: price!, thumbnailImageURL: thumbnailURL!, largeImageURL: imageURL!, itemURL: itemURL!, artistURL: artistURL!)
+                albums.append(newAlbum)
+            }
+            
+            dispatch_async(dispatch_get_main_queue(), {
+                UIApplication.sharedApplication().networkActivityIndicatorVisible = false
+                self.appsTableView.reloadData()
+            })
+        }
     }
 
 }
