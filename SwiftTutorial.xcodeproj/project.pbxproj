@@ -79,10 +79,10 @@
 			children = (
 				0256BB4F194F3F38003E2942 /* AppDelegate.swift */,
 				0256BB51194F3F38003E2942 /* SearchResultsViewController.swift */,
+				0256BB6C194F41F5003E2942 /* APIController.swift */,
 				0256BB53194F3F38003E2942 /* Main.storyboard */,
 				0256BB56194F3F38003E2942 /* Images.xcassets */,
 				0256BB4D194F3F38003E2942 /* Supporting Files */,
-				0256BB6C194F41F5003E2942 /* APIController.swift */,
 			);
 			path = SwiftTutorial;
 			sourceTree = "<group>";
